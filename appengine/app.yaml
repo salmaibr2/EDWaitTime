@@ -4,4 +4,5 @@ automatic_scaling:
   max_instances: 1
 entrypoint: gunicorn -b :8080 app4:server
 env_variables:
-  BUCKET_NAME: 'sp26-project.appspot.com'
+  BUCKET_NAME: 'edwaittime-cs163-2026-data'
+  EDA_CSV_BLOB: 'processed/eda_df.csv'
