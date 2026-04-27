@@ -1,12 +1,5 @@
 import dash
-from dash import html, dcc
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-from pathlib import Path
-import os
-from io import StringIO
-from google.cloud import storage
+from dash import html
 
 dash.register_page(__name__)
 
@@ -87,6 +80,14 @@ highlight_box_style = {
     "marginBottom": "0.8rem",
 }
 
+warning_box_style = {
+    "backgroundColor": "#fef9c3",
+    "border": "1px solid #fde68a",
+    "borderRadius": "8px",
+    "padding": "0.8rem 1rem",
+    "marginBottom": "0.8rem",
+}
+
 model_table_header = {
     "padding": "0.6rem 0.8rem",
     "borderBottom": "2px solid #1e293b",
@@ -114,13 +115,14 @@ best_cell = {
 }
 
 
-# layout
+# ── layout ──
 layout = html.Div(
     [
         # Header
         html.H1("Analytics & Results", style={"marginBottom": "0.3rem"}),
         html.P(
-            "EDA findings, visualizations, and model performance from 121,026 ED visits (NHAMCS 2015\u20132021).",
+            "PATWT-weighted EDA, bottleneck analysis, and model performance — "
+            "91,811 ED visits from NHAMCS 2015–2022 representing ~728M national visits.",
             style={"color": "#4b5563", "marginTop": 0, "marginBottom": "0.5rem"},
         ),
         html.Hr(),
@@ -128,74 +130,74 @@ layout = html.Div(
         # Dataset at a glance
         html.Div(
             [
-                html.Div([html.P("121,026", style=stat_number), html.P("ED Visits", style=stat_label)], style=stat_box_style),
-                html.Div([html.P("36", style=stat_number), html.P("Features", style=stat_label)], style=stat_box_style),
-                html.Div([html.P("33.3 min", style=stat_number), html.P("Mean Wait", style=stat_label)], style=stat_box_style),
-                html.Div([html.P("15.0 min", style=stat_number), html.P("Median Wait", style=stat_label)], style=stat_box_style),
-                html.Div([html.P("50.4 min", style=stat_number), html.P("Std Dev", style=stat_label)], style=stat_box_style),
-                html.Div([html.P("477 min", style=stat_number), html.P("Max Wait", style=stat_label)], style=stat_box_style),
+                html.Div([html.P("91,811", style=stat_number), html.P("ED Visits", style=stat_label)], style=stat_box_style),
+                html.Div([html.P("~728M", style=stat_number), html.P("Weighted National Visits", style=stat_label)], style=stat_box_style),
+                html.Div([html.P("6 Years", style=stat_number), html.P("2015–2022", style=stat_label)], style=stat_box_style),
+                html.Div([html.P("37", style=stat_number), html.P("Features", style=stat_label)], style=stat_box_style),
+                html.Div([html.P("0–480 min", style=stat_number), html.P("Wait Time Range", style=stat_label)], style=stat_box_style),
+                html.Div([html.P("PATWT", style=stat_number), html.P("Survey Weights Applied", style=stat_label)], style=stat_box_style),
             ],
             style=stat_row_style,
         ),
 
-       
-        # SECTION 1:Wait Time Distribution
-        html.H2("1. Wait Time Distribution", style=section_heading_style),
+        # SECTION 1: Wait Time Distribution
+        html.H2("1. Wait Time Distribution (Weighted)", style=section_heading_style),
 
         html.Img(
-            src="/assets/waittime_distribution.png",
+            src="/assets/waittime_distribution_weighted.png",
             style={"width": "100%", "maxWidth": "800px", "display": "block", "margin": "0 auto"},
         ),
-        html.P("Figure 1: Distribution of ED wait times capped at the 99th percentile.", style=fig_caption_style),
+        html.P(
+            "Figure 1: PATWT-weighted distribution of ED wait times. Each bin is scaled "
+            "by the survey weights so counts reflect national visit volumes.",
+            style=fig_caption_style,
+        ),
 
         html.Div(
             [
                 html.P(
-                    "The wait time distribution is heavily right-skewed. The tallest bar sits "
-                    "near 0\u201310 minutes, with roughly 30,000 visits falling in the shortest bin. "
-                    "The KDE curve confirms a sharp peak followed by a long tail that stretches "
-                    "past 250 minutes.",
+                    "The PATWT-weighted distribution confirms that the right-skewed shape holds "
+                    "at the national population level, not just in the raw sample. The peak sits "
+                    "near 0–10 minutes, and the weighted mean is pulled well above the weighted "
+                    "median by a long tail of visits exceeding 90 minutes.",
                     style=analysis_text_style,
                 ),
                 html.P(
-                    "The mean (33.3 min) is more than double the median (15.0 min), a classic "
-                    "indicator of right skew. In practical terms, half of all patients are seen "
-                    "within 15 minutes, but a minority experience very long delays that pull the "
-                    "average upward. This skew is a key challenge for predictive modeling because "
-                    "models optimized for mean error tend to underpredict the long-tail cases "
-                    "that represent the most operationally concerning visits.",
+                    "Because each NHAMCS record represents thousands of actual visits nationwide "
+                    "(PATWT range 40–57,926), unweighted statistics would over-represent large "
+                    "urban hospitals sampled at higher rates. All subsequent analyses in this "
+                    "dashboard use PATWT-weighted estimates.",
                     style=analysis_text_style,
                 ),
             ],
             style=card_style,
         ),
 
-    
-        # SECTION 2:  Wait Time by Arrival Hour
-        html.H2("2. Wait Time by Arrival Hour", style=section_heading_style),
+        # SECTION 2: Temporal Patterns
+        html.H2("2. Temporal Patterns", style=section_heading_style),
 
         html.Img(
-            src="/assets/waittime_by_hour.png",
-            style={"width": "100%", "maxWidth": "850px", "display": "block", "margin": "0 auto"},
+            src="/assets/waittime_temporal_weighted.png",
+            style={"width": "100%", "maxWidth": "900px", "display": "block", "margin": "0 auto"},
         ),
-        html.P("Figure 2: Box plot of wait times across 24 arrival hours.", style=fig_caption_style),
+        html.P(
+            "Figure 2: PATWT-weighted mean wait time by arrival hour (left) and day of week (right).",
+            style=fig_caption_style,
+        ),
 
         html.Div(
             [
                 html.P(
-                    "Arrival hour has a clear, non-linear relationship with wait time. Patients "
-                    "arriving between 3\u20138 AM experience the shortest waits, with hourly means "
-                    "of 23\u201327 minutes. Wait times rise steadily through the morning and plateau "
-                    "during the afternoon and evening (1\u20138 PM), where averages reach 35\u201338 minutes. "
-                    "The 6 PM hour has the single highest average at 37.6 minutes.",
+                    "Arrival hour is the strongest temporal signal. Weighted mean wait times trough "
+                    "in the early morning hours (3–6 AM) and peak in the afternoon and early evening "
+                    "(1–8 PM), a pattern that is stable across all six survey years.",
                     style=analysis_text_style,
                 ),
                 html.P(
-                    "The box plots also show that outlier density (dots above the whiskers) increases "
-                    "substantially during peak hours, meaning not only are typical waits longer, "
-                    "but extreme waits become more frequent. Late-night hours (10 PM\u20131 AM) maintain "
-                    "moderately elevated waits despite lower volume, likely reflecting overnight "
-                    "staffing reductions.",
+                    "Day-of-week effects are smaller but consistent: Monday carries the highest "
+                    "weighted mean wait, with weekend days averaging several minutes less. This "
+                    "aligns with deferred weekend care presenting on Monday and weekday primary "
+                    "care referral patterns.",
                     style=analysis_text_style,
                 ),
             ],
@@ -205,114 +207,125 @@ layout = html.Div(
         html.Div(
             [
                 html.P(
-                    "\u26a1 Peak congestion window: Arrivals between 1 PM and 8 PM face "
-                    "~59% longer waits than early morning arrivals.",
+                    "Arrival hour is the single most learnable signal in this dataset. "
+                    "A simple hour-median baseline matches complex gradient boosting on MAE.",
                     style={"fontWeight": "600", "margin": "0"},
                 ),
             ],
             style=highlight_box_style,
         ),
 
-        
-        # SECTION 3: Wait Time by Triage Level
-        html.H2("3. Wait Time by Triage Level (IMMEDR)", style=section_heading_style),
+        # SECTION 3: Triage Breakdown
+        html.H2("3. Wait Time by Triage Level (Weighted)", style=section_heading_style),
 
         html.Img(
-            src="/assets/waittime_by_triage.png",
+            src="/assets/waittime_by_triage_weighted.png",
             style={"width": "100%", "maxWidth": "750px", "display": "block", "margin": "0 auto"},
         ),
-        html.P("Figure 3: Wait time distribution by triage immediacy level.", style=fig_caption_style),
+        html.P(
+            "Figure 3: PATWT-weighted mean wait time and visit share by IMMEDR triage category.",
+            style=fig_caption_style,
+        ),
 
         html.Div(
             [
                 html.P(
                     "IMMEDR encodes triage urgency: 1 = Immediate, 2 = Emergent, 3 = Urgent, "
-                    "4 = Semi-urgent, 5 = Non-urgent. Values -9 and -8 represent unknown or "
-                    "not-recorded triage levels, and 0 and 7 are other coded categories.",
+                    "4 = Semi-urgent, 5 = Non-urgent. Level 1 (Immediate) patients are seen fastest, "
+                    "confirming that priority triage protocols are functioning at the national level.",
                     style=analysis_text_style,
                 ),
                 html.P(
-                    "Level 1 (Immediate) patients have the lowest median wait and the tightest "
-                    "distribution, confirming that true emergencies are prioritized effectively. "
-                    "Level 3 (Urgent) patients show the widest spread and some of the longest outliers, "
-                    "which makes sense since this is the largest volume category and these patients "
-                    "are sick enough to need prompt care but may get queued behind higher-acuity cases.",
-                    style=analysis_text_style,
-                ),
-                html.P(
-                    "Interestingly, the unknown triage categories (-9, -8) show wait distributions "
-                    "comparable to levels 3\u20134, suggesting that missing triage data does not "
-                    "correspond to a distinct patient population in terms of wait experience.",
+                    "Level 3 (Urgent) accounts for the largest weighted visit share and shows the "
+                    "widest wait time spread. These patients are sick enough to need prompt care but "
+                    "are routinely queued behind higher-acuity cases, making them the group most "
+                    "sensitive to operational bottlenecks like boarding and bed shortages.",
                     style=analysis_text_style,
                 ),
             ],
             style=card_style,
         ),
 
-        
-        # SECTION 4: Wait Time by Day of Week
+        # SECTION 4: Bottleneck Analysis
+        html.H2("4. Operational Bottleneck Analysis", style=section_heading_style),
 
-        html.H2("4. Wait Time by Day of Week", style=section_heading_style),
+        html.Div(
+            [
+                html.P(
+                    "Eleven binary operational flags were tested: BOARD (inpatient boarding), "
+                    "OBSCLIN (observation unit placement), ANYIMAGE / MRI / XRAY / CTCONTRAST "
+                    "(imaging workload), BEDREG / BEDCZAR / IMBED (bed management programs), "
+                    "FASTTRAK (fast-track pathway), and ADMIT (admitted to inpatient).",
+                    style=analysis_text_style,
+                ),
+                html.P(
+                    "For each flag, the PATWT-weighted mean wait time is computed separately "
+                    "for flag-present and flag-absent visits. The delta (present minus absent) "
+                    "estimates the marginal delay associated with each condition at the "
+                    "national population level.",
+                    style=analysis_text_style,
+                ),
+            ],
+            style=card_style,
+        ),
 
         html.Img(
-            src="/assets/waittime_by_day.png",
-            style={"width": "100%", "maxWidth": "700px", "display": "block", "margin": "0 auto"},
+            src="/assets/bottleneck_delta.png",
+            style={"width": "100%", "maxWidth": "800px", "display": "block", "margin": "0 auto"},
         ),
-        html.P("Figure 4: Average wait time by day of week (1 = Sunday, 7 = Saturday).", style=fig_caption_style),
+        html.P(
+            "Figure 4: PATWT-weighted mean wait delta (flag present minus flag absent, in minutes). "
+            "Positive bars indicate conditions associated with longer waits.",
+            style=fig_caption_style,
+        ),
 
         html.Div(
             [
-                html.P(
-                    "Monday (VDAYR = 2) has the highest average wait time at 36.6 minutes and "
-                    "the highest patient volume (19,551 visits). Tuesday and Wednesday follow "
-                    "at 34.8 and 34.3 minutes respectively. Sunday (30.0 min) and Saturday "
-                    "(29.8 min) have the shortest average waits, about 6\u20137 minutes below Monday.",
-                    style=analysis_text_style,
-                ),
-                html.P(
-                    "The weekday\u2013weekend gap is consistent across the multi-year dataset, "
-                    "suggesting a structural pattern rather than random variation. This likely "
-                    "reflects higher weekday volumes driven by patients who delay seeking care "
-                    "over the weekend and present on Monday, combined with referral patterns "
-                    "from primary care offices that are open on weekdays.",
-                    style=analysis_text_style,
-                ),
+                html.Div([
+                    html.P("Boarding (BOARD)", style={"fontWeight": "700", "margin": "0 0 0.2rem 0", "color": "#dc2626"}),
+                    html.P("+7.7 min weighted delta — largest binary bottleneck. Inpatient-admitted patients "
+                           "held in ED beds block capacity for incoming patients, creating a cascade effect "
+                           "on all subsequent wait times.", style={"margin": 0, "fontSize": "0.92rem"}),
+                ], style={**card_style, "borderLeft": "4px solid #dc2626"}),
+                html.Div([
+                    html.P("Bed Czar (BEDCZAR)", style={"fontWeight": "700", "margin": "0 0 0.2rem 0", "color": "#ea580c"}),
+                    html.P("+6.8 min — bed management coordinators appear at the most congested facilities. "
+                           "The association reflects where the program is deployed, not a causal effect of "
+                           "the program itself.", style={"margin": 0, "fontSize": "0.92rem"}),
+                ], style={**card_style, "borderLeft": "4px solid #ea580c"}),
+                html.Div([
+                    html.P("Observation Unit (OBSCLIN)", style={"fontWeight": "700", "margin": "0 0 0.2rem 0", "color": "#d97706"}),
+                    html.P("+5.0 min — patients placed in observation status consume ED capacity that affects "
+                           "throughput for all subsequent arrivals.", style={"margin": 0, "fontSize": "0.92rem"}),
+                ], style={**card_style, "borderLeft": "4px solid #d97706"}),
             ],
-            style=card_style,
         ),
-
-        
-        # SECTION 5: Correlation Heatmap
-    
-        html.H2("5. Correlation Heatmap", style=section_heading_style),
 
         html.Img(
-            src="/assets/correlation_heatmap.png",
-            style={"width": "100%", "maxWidth": "750px", "display": "block", "margin": "0 auto"},
+            src="/assets/bottleneck_shap.png",
+            style={"width": "100%", "maxWidth": "800px", "display": "block", "margin": "0 auto"},
         ),
-        html.P("Figure 5: Pearson correlation between numeric features and WAITTIME.", style=fig_caption_style),
+        html.P(
+            "Figure 5: PATWT-weighted mean |SHAP value| for each operational feature from a "
+            "HistGradientBoosting model trained on 2015–2018 and tested on 2022 holdout.",
+            style=fig_caption_style,
+        ),
 
         html.Div(
             [
                 html.P(
-                    "The top row shows the correlation of each variable with WAITTIME. Every "
-                    "value is near zero: AGE (r = \u22120.01), PAINSCALE (r = 0.00), BPSYS "
-                    "(r = 0.00), PULSE (r = \u22120.01), and even ARRIVAL_HOUR (r = 0.06). "
-                    "No single patient-level feature explains meaningful variance in wait time.",
+                    "SHAP values from a PATWT-weighted gradient boosting model confirm the "
+                    "bottleneck ranking from the raw deltas, while also accounting for feature "
+                    "interactions. Fast-track (FASTTRAK) is the highest-impact feature by SHAP "
+                    "(mean |SHAP| 1.03), reflecting that its presence strongly predicts reduced "
+                    "wait times — evidence that parallel triage pathways are highly effective.",
                     style=analysis_text_style,
                 ),
                 html.P(
-                    "The heatmap does reveal strong intercorrelations among clinical variables: "
-                    "BPSYS and BPDIAS (r = 0.81), TEMPF and RESPR (r = 0.29), PULSE and RESPR "
-                    "(r = 0.38). These reflect normal physiological relationships but do not "
-                    "translate into wait time predictive power.",
-                    style=analysis_text_style,
-                ),
-                html.P(
-                    "This is a critical finding: it confirms that ED wait times are driven by "
-                    "system-level factors (patient volume, staffing, bed availability) rather "
-                    "than by individual patient characteristics. Any predictive model relying "
-                    "solely on patient-level features will face a fundamental ceiling on accuracy.",
+                    "Observation unit (OBSCLIN, 0.95) and bed czar (BEDCZAR, 0.65) rank next, "
+                    "followed by boarding (BOARD, 0.56). Imaging flags (ANYIMAGE, MRI, CTCONTRAST) "
+                    "have lower SHAP values, suggesting their impact on wait time is mediated "
+                    "through other operational conditions rather than being a direct cause.",
                     style=analysis_text_style,
                 ),
             ],
@@ -322,97 +335,156 @@ layout = html.Div(
         html.Div(
             [
                 html.P(
-                    "\U0001f50d Key takeaway: Patient demographics and clinical variables have "
-                    "near-zero correlation with wait time. Delays are system-driven, not patient-driven.",
+                    "Fast-track programs have the largest SHAP impact and the only negative delta — "
+                    "hospitals with fast-track report shorter waits. Boarding has the largest "
+                    "positive delta (+7.7 min). These two interventions should be the primary "
+                    "targets for operational improvement.",
                     style={"fontWeight": "600", "margin": "0"},
                 ),
             ],
             style=highlight_box_style,
         ),
 
-        
-        # SECTION 6: Model Performance
-        
-        html.H2("6. Model Performance", style=section_heading_style),
+        # SECTION 5: Operational Features Overview
+        html.H2("5. Operational Feature Prevalence & Impact", style=section_heading_style),
+
+        html.Img(
+            src="/assets/operational_features_weighted.png",
+            style={"width": "100%", "maxWidth": "900px", "display": "block", "margin": "0 auto"},
+        ),
+        html.P(
+            "Figure 6: For each operational flag — PATWT-weighted prevalence (% of visits where "
+            "flag = present) and the weighted mean wait split (present vs. absent).",
+            style=fig_caption_style,
+        ),
 
         html.Div(
             [
                 html.P(
-                    "We evaluated six models across three modeling strategies on a held-out test set:",
+                    "Prevalence matters for prioritization: a bottleneck that adds 10 minutes "
+                    "but occurs in only 2% of visits has less total population impact than one "
+                    "that adds 5 minutes across 30% of visits. The combined view of prevalence "
+                    "and delta identifies which conditions to address first for the greatest "
+                    "reduction in national ED wait burden.",
                     style=analysis_text_style,
                 ),
-                html.Ul(
-                    [
-                        html.Li("Arrival-only with residual correction (Residual HGB, Hour-Median)"),
-                        html.Li("Segmented by triage level (Segmented HGB by IMMEDR, Hour-Median)"),
-                        html.Li("Retrospective with post-visit variables (Linear Regression, Hour-Median)"),
-                    ],
-                    style={"fontSize": "0.9rem", "marginBottom": "0.8rem"},
+            ],
+            style=card_style,
+        ),
+
+        # SECTION 6: Regional Breakdown
+        html.H2("6. Regional Breakdown", style=section_heading_style),
+
+        html.Img(
+            src="/assets/waittime_by_region_weighted.png",
+            style={"width": "100%", "maxWidth": "800px", "display": "block", "margin": "0 auto"},
+        ),
+        html.P(
+            "Figure 7: PATWT-weighted mean wait time by US census region.",
+            style=fig_caption_style,
+        ),
+
+        html.Img(
+            src="/assets/bottleneck_by_region.png",
+            style={"width": "100%", "maxWidth": "900px", "display": "block", "margin": "0 auto"},
+        ),
+        html.P(
+            "Figure 8: Bottleneck delta (minutes) by US census region for each operational flag.",
+            style=fig_caption_style,
+        ),
+
+        html.Div(
+            [
+                html.P(
+                    "Regional stratification reveals that bottleneck severity is not uniform "
+                    "across the US. The Northeast and West show generally higher wait times "
+                    "and stronger bottleneck deltas, consistent with higher urban density, "
+                    "larger hospital volumes, and greater bed pressure in those regions.",
+                    style=analysis_text_style,
+                ),
+                html.P(
+                    "The South has the highest weighted visit share (largest regional population "
+                    "in the NHAMCS sample) but a more moderate bottleneck profile. The Midwest "
+                    "shows the smallest regional deltas for most flags, suggesting relatively "
+                    "better throughput conditions in the sampled facilities.",
+                    style=analysis_text_style,
+                ),
+            ],
+            style=card_style,
+        ),
+
+        # SECTION 7: Model Results
+        html.H2("7. Model Results", style=section_heading_style),
+
+        html.Div(
+            [
+                html.P(
+                    "We trained a PATWT-weighted HistGradientBoosting classifier on arrival-time "
+                    "features (triage level, vitals, arrival hour, demographics, region) to predict "
+                    "whether a patient will wait more than 30 minutes. Train: 2015–2018. "
+                    "Validation: 2021. Holdout: 2022.",
+                    style=analysis_text_style,
                 ),
             ],
             style=card_style,
         ),
 
         html.Img(
-            src="/assets/model_comparison.png",
+            src="/assets/model_classifier_eval.png",
             style={"width": "100%", "maxWidth": "850px", "display": "block", "margin": "0 auto"},
         ),
-        html.P("Figure 6: Holdout MAE comparison across all model paths.", style=fig_caption_style),
+        html.P(
+            "Figure 9: ROC curve and precision-recall curve on the 2022 holdout set.",
+            style=fig_caption_style,
+        ),
 
         # Model results table
         html.Div(
             html.Table(
                 [
                     html.Thead(html.Tr([
+                        html.Th("Task", style=model_table_header),
                         html.Th("Model", style=model_table_header),
-                        html.Th("Strategy", style=model_table_header),
-                        html.Th("MAE (min)", style={**model_table_header, "textAlign": "center"}),
-                        html.Th("RMSE (min)", style={**model_table_header, "textAlign": "center"}),
-                        html.Th("R\u00b2", style={**model_table_header, "textAlign": "center"}),
+                        html.Th("Metric", style={**model_table_header, "textAlign": "center"}),
+                        html.Th("Value", style={**model_table_header, "textAlign": "center"}),
+                        html.Th("Holdout Year", style={**model_table_header, "textAlign": "center"}),
                     ])),
                     html.Tbody([
                         html.Tr([
-                            html.Td("Residual HGB", style=model_table_cell),
-                            html.Td("Arrival + Residual", style=model_table_cell),
-                            html.Td("28.34", style=best_cell),
-                            html.Td("55.91", style=model_table_cell_center),
-                            html.Td("\u22120.097", style=model_table_cell_center),
+                            html.Td("Classification (wait >30 min)", style=model_table_cell),
+                            html.Td("Weighted HGB Classifier", style=model_table_cell),
+                            html.Td("AUC-ROC", style=model_table_cell_center),
+                            html.Td("0.581", style=best_cell),
+                            html.Td("2022", style=model_table_cell_center),
                         ], style={"backgroundColor": "#f0fdf4"}),
                         html.Tr([
-                            html.Td("Hour-Median (Trainfit)", style=model_table_cell),
-                            html.Td("Arrival + Residual", style=model_table_cell),
-                            html.Td("28.34", style=best_cell),
-                            html.Td("56.00", style=model_table_cell_center),
-                            html.Td("\u22120.100", style=model_table_cell_center),
+                            html.Td("Classification (wait >30 min)", style=model_table_cell),
+                            html.Td("Weighted HGB Classifier", style=model_table_cell),
+                            html.Td("Avg Precision", style=model_table_cell_center),
+                            html.Td("0.376", style=model_table_cell_center),
+                            html.Td("2022", style=model_table_cell_center),
                         ]),
                         html.Tr([
-                            html.Td("Segmented HGB by IMMEDR", style=model_table_cell),
-                            html.Td("Segmented", style=model_table_cell),
-                            html.Td("28.36", style=best_cell),
-                            html.Td("55.81", style=model_table_cell_center),
-                            html.Td("\u22120.093", style=model_table_cell_center),
+                            html.Td("Regression (wait time, min)", style=model_table_cell),
+                            html.Td("Weighted HGB Regressor (log1p)", style=model_table_cell),
+                            html.Td("Weighted MAE", style=model_table_cell_center),
+                            html.Td("29.6 min", style=model_table_cell_center),
+                            html.Td("2022", style=model_table_cell_center),
                         ], style={"backgroundColor": "#f0fdf4"}),
                         html.Tr([
-                            html.Td("Hour-Median (Trainfit)", style=model_table_cell),
-                            html.Td("Segmented", style=model_table_cell),
-                            html.Td("28.34", style=best_cell),
-                            html.Td("56.00", style=model_table_cell_center),
-                            html.Td("\u22120.100", style=model_table_cell_center),
+                            html.Td("Regression (wait time, min)", style=model_table_cell),
+                            html.Td("Weighted HGB Regressor (log1p)", style=model_table_cell),
+                            html.Td("Weighted R²", style=model_table_cell_center),
+                            html.Td("−0.12", style=model_table_cell_center),
+                            html.Td("2022", style=model_table_cell_center),
                         ]),
                         html.Tr([
-                            html.Td("Hour-Median (Trainfit)", style=model_table_cell),
-                            html.Td("Retrospective", style=model_table_cell),
-                            html.Td("28.34", style=best_cell),
-                            html.Td("56.00", style=model_table_cell_center),
-                            html.Td("\u22120.100", style=model_table_cell_center),
+                            html.Td("Baseline", style=model_table_cell),
+                            html.Td("Hour-median (arrival hour only)", style=model_table_cell),
+                            html.Td("Weighted MAE", style=model_table_cell_center),
+                            html.Td("28.3 min", style=model_table_cell_center),
+                            html.Td("2022", style=model_table_cell_center),
                         ], style={"backgroundColor": "#f0fdf4"}),
-                        html.Tr([
-                            html.Td("Linear Regression", style=model_table_cell),
-                            html.Td("Retrospective", style=model_table_cell),
-                            html.Td("34.49", style=model_table_cell_center),
-                            html.Td("53.48", style={**model_table_cell_center, "fontWeight": "700", "color": "#16a34a"}),
-                            html.Td("\u22120.004", style={**model_table_cell_center, "fontWeight": "700", "color": "#16a34a"}),
-                        ]),
                     ]),
                 ],
                 style={"width": "100%", "borderCollapse": "collapse"},
@@ -423,53 +495,96 @@ layout = html.Div(
         html.Div(
             [
                 html.P(
-                    "The tree-based models (Residual HGB, Segmented HGB) and hour-median baseline "
-                    "all achieve an MAE of ~28.3 minutes, meaning the average prediction is off by "
-                    "about 28 minutes. Linear regression has a notably higher MAE of 34.5 minutes, "
-                    "confirming that the relationship between features and wait time is non-linear.",
+                    "The negative R² on regression is expected, not a modeling failure. "
+                    "Individual wait time is driven by real-time hospital state (bed occupancy, "
+                    "staffing ratios, current census) that is absent from retrospective survey data. "
+                    "The hour-median baseline matches complex gradient boosting on MAE because "
+                    "arrival hour captures nearly all learnable signal in the available features.",
                     style=analysis_text_style,
                 ),
                 html.P(
-                    "However, all models produce negative R\u00b2 values on the holdout set. A negative "
-                    "R\u00b2 means the model\u2019s predictions are worse than simply predicting the mean "
-                    "wait time for every patient. This is not a failure of the algorithms but rather "
-                    "reflects the fundamental difficulty of the problem: wait time variance is driven "
-                    "by real-time factors (current patient volume, staffing, bed occupancy) that are "
-                    "not captured in retrospective survey data.",
-                    style=analysis_text_style,
-                ),
-                html.P(
-                    "An important finding is that the simple hour-median model (predicting the historical "
-                    "median wait for each arrival hour) performs nearly identically to complex gradient "
-                    "boosting models. This suggests that arrival hour captures most of the learnable "
-                    "signal in the available features, and adding patient-level variables provides "
-                    "minimal additional predictive power.",
+                    "The AUC-ROC of 0.581 for the >30 min classifier is modest but meaningful: "
+                    "it outperforms random assignment (0.50) and provides actionable risk stratification "
+                    "for triage support when combined with arrival-time triage scores.",
                     style=analysis_text_style,
                 ),
             ],
             style=card_style,
         ),
 
-    
-        # SECTION 7: Next Steps
-        
-        html.H2("7. Next Steps", style=section_heading_style),
+        html.Div(
+            [
+                html.P(
+                    "Key limitation: NHAMCS contains no hospital identifier. All models learn "
+                    "national-level patterns. A hospital deploying these models would need to "
+                    "recalibrate on its own historical data to account for facility-specific "
+                    "capacity and patient mix.",
+                    style={"fontWeight": "600", "margin": "0"},
+                ),
+            ],
+            style=warning_box_style,
+        ),
+
+        html.Img(
+            src="/assets/model_feature_importance.png",
+            style={"width": "100%", "maxWidth": "800px", "display": "block", "margin": "0 auto"},
+        ),
+        html.P(
+            "Figure 10: PATWT-weighted permutation importance (mean decrease in AUC-ROC) "
+            "for the arrival-time classifier on the 2022 holdout.",
+            style=fig_caption_style,
+        ),
+
+        html.Img(
+            src="/assets/model_risk_profiles.png",
+            style={"width": "100%", "maxWidth": "900px", "display": "block", "margin": "0 auto"},
+        ),
+        html.P(
+            "Figure 11: Predicted probability of wait >30 min by triage level (left), "
+            "arrival hour (center), and US census region (right).",
+            style=fig_caption_style,
+        ),
 
         html.Div(
             [
-                html.H4("For hospitals", style={"marginBottom": "0.3rem", "color": "#1e40af"}),
+                html.P(
+                    "Risk profiles confirm the operational story: Immediate (level 1) triage "
+                    "has the lowest predicted probability of a long wait. Afternoon/evening "
+                    "arrivals face the highest risk across all triage levels. Regional risk "
+                    "variation aligns with the bottleneck severity differences observed in "
+                    "the regional bottleneck analysis.",
+                    style=analysis_text_style,
+                ),
+            ],
+            style=card_style,
+        ),
+
+        # SECTION 8: Recommendations
+        html.H2("8. Operational Recommendations", style=section_heading_style),
+
+        html.Div(
+            [
+                html.H4("Highest-impact interventions", style={"marginBottom": "0.3rem", "color": "#1e40af"}),
                 html.Ul([
                     html.Li(
-                        "Increase staffing coverage between 10 AM and 8 PM, particularly on Mondays, "
-                        "when both volume and wait times peak."
+                        "Expand fast-track capacity: fast-track is the strongest protective factor "
+                        "(SHAP 1.03). Parallel pathways for lower-acuity patients directly reduce "
+                        "congestion for higher-acuity queues."
                     ),
                     html.Li(
-                        "Post historical median wait times by hour as patient-facing estimates. "
-                        "Our analysis shows this simple approach is as accurate as complex ML models."
+                        "Reduce inpatient boarding: boarding adds +7.7 min per affected visit. "
+                        "Surge protocols that pull admitted patients to hallway inpatient beds "
+                        "within 2 hours of admission order have shown effectiveness in prior research."
                     ),
                     html.Li(
-                        "Investigate why Monday has the highest volume and wait time. Deferred weekend "
-                        "care and primary care referral patterns are likely contributing factors."
+                        "Accelerate observation unit throughput: the +5.0 min obs unit delta "
+                        "reflects capacity consumed by long-stay obs patients. Daily discharge "
+                        "rounds before 10 AM can release beds before afternoon peak volume."
+                    ),
+                    html.Li(
+                        "Increase afternoon/evening staffing: 1–8 PM is consistently the highest-wait "
+                        "window across all years and regions. Shift overlap during this window "
+                        "provides the highest marginal return on staffing investment."
                     ),
                 ]),
             ],
@@ -477,39 +592,22 @@ layout = html.Div(
         ),
         html.Div(
             [
-                html.H4("For future research", style={"marginBottom": "0.3rem", "color": "#1e40af"}),
+                html.H4("For future analysis", style={"marginBottom": "0.3rem", "color": "#1e40af"}),
                 html.Ul([
                     html.Li(
-                        "Incorporate real-time operational data (current census, staffing ratios, "
-                        "bed occupancy) to break through the accuracy ceiling of retrospective features."
+                        "Integrate real-time ED census data (current boarding count, occupied beds, "
+                        "patients in waiting room) to cross the accuracy ceiling that retrospective "
+                        "survey data cannot overcome."
                     ),
                     html.Li(
-                        "Reframe as classification: predicting whether wait exceeds 30 or 60 minutes "
-                        "may yield more actionable and accurate results than continuous regression."
+                        "Apply facility-level random effects to account for between-hospital variance "
+                        "that is currently absorbed into noise."
                     ),
                     html.Li(
-                        "Apply log transformation to the target variable to reduce the impact of "
-                        "extreme outliers on model training."
-                    ),
-                    html.Li(
-                        "Conduct facility-level analysis to test whether the national-level finding "
-                        "of no demographic disparities holds at individual hospitals."
+                        "Conduct sub-group bottleneck analysis by triage level to identify whether "
+                        "boarding disproportionately affects urgent vs. non-urgent patients."
                     ),
                 ]),
-            ],
-            style=card_style,
-        ),
-        html.Div(
-            [
-                html.H4("Equity considerations", style={"marginBottom": "0.3rem", "color": "#1e40af"}),
-                html.P(
-                    "The near-zero correlation between patient demographics and wait time is a "
-                    "positive finding at the national level, suggesting that NHAMCS-sampled facilities "
-                    "are not systematically delaying care based on age, sex, or other characteristics. "
-                    "However, this does not rule out disparities at the individual hospital or regional "
-                    "level, which warrants further investigation.",
-                    style=analysis_text_style,
-                ),
             ],
             style=card_style,
         ),
