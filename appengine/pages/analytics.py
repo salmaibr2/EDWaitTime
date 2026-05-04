@@ -328,6 +328,16 @@ layout = html.Div(
                     "through other operational conditions rather than being a direct cause.",
                     style=analysis_text_style,
                 ),
+                html.P(
+                    "Note on TOTPROC: the total procedures count has the highest raw SHAP value "
+                    "among operational features (1.42 min) — higher than any binary bottleneck flag. "
+                    "However, it is excluded from the bottleneck ranking because it is a proxy for "
+                    "visit complexity, not an actionable operational lever. More procedures reflect "
+                    "sicker patients requiring more care; a hospital cannot reduce procedures to shorten "
+                    "waits. Its high SHAP value confirms that visit complexity is a major driver of "
+                    "wait time variance, but the levers for improvement lie in the process flags above.",
+                    style={**analysis_text_style, "color": "#6b7280", "fontStyle": "italic"},
+                ),
             ],
             style=card_style,
         ),
