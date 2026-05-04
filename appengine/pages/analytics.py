@@ -224,7 +224,8 @@ layout = html.Div(
             style={"width": "100%", "maxWidth": "750px", "display": "block", "margin": "0 auto"},
         ),
         html.P(
-            "Figure 3: PATWT-weighted mean wait time and visit share by IMMEDR triage category.",
+            "Figure 3: PATWT-weighted mean wait time and visit share by IMMEDR triage category. "
+            "Includes all coded values: 1–5 (standard triage levels), 0 (not recorded), and 7 (no triage performed).",
             style=fig_caption_style,
         ),
 
@@ -242,6 +243,13 @@ layout = html.Div(
                     "are routinely queued behind higher-acuity cases, making them the group most "
                     "sensitive to operational bottlenecks like boarding and bed shortages.",
                     style=analysis_text_style,
+                ),
+                html.P(
+                    "Two additional categories appear in the data: No triage (code 7) — patients "
+                    "who bypassed the triage queue entirely, typically via immediate bedding — and "
+                    "Not recorded (code 0), visits where no triage assignment was captured. "
+                    "Both represent a small share of national visits.",
+                    style={**analysis_text_style, "color": "#6b7280", "fontStyle": "italic"},
                 ),
             ],
             style=card_style,
