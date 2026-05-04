@@ -122,7 +122,8 @@ layout = html.Div(
         html.H1("Analytics & Results", style={"marginBottom": "0.3rem"}),
         html.P(
             "PATWT-weighted EDA, bottleneck analysis, and model performance — "
-            "91,811 ED visits from NHAMCS 2015–2022 representing ~728M national visits.",
+            "91,811 ED visits from NHAMCS 2015–2018, 2021–2022 representing ~728M national visits. "
+            "2019–2020 are excluded from the analysis due to data quality concerns during the COVID-19 pandemic.",
             style={"color": "#4b5563", "marginTop": 0, "marginBottom": "0.5rem"},
         ),
         html.Hr(),
@@ -132,7 +133,7 @@ layout = html.Div(
             [
                 html.Div([html.P("91,811", style=stat_number), html.P("ED Visits", style=stat_label)], style=stat_box_style),
                 html.Div([html.P("~728M", style=stat_number), html.P("Weighted National Visits", style=stat_label)], style=stat_box_style),
-                html.Div([html.P("6 Years", style=stat_number), html.P("2015–2022", style=stat_label)], style=stat_box_style),
+                html.Div([html.P("6 Years", style=stat_number), html.P("2015–18, 2021–22*", style=stat_label)], style=stat_box_style),
                 html.Div([html.P("37", style=stat_number), html.P("Features", style=stat_label)], style=stat_box_style),
                 html.Div([html.P("0–480 min", style=stat_number), html.P("Wait Time Range", style=stat_label)], style=stat_box_style),
                 html.Div([html.P("PATWT", style=stat_number), html.P("Survey Weights Applied", style=stat_label)], style=stat_box_style),
@@ -432,7 +433,8 @@ layout = html.Div(
                     "We trained a PATWT-weighted HistGradientBoosting classifier on arrival-time "
                     "features (triage level, vitals, arrival hour, demographics, region) to predict "
                     "whether a patient will wait more than 30 minutes. Train: 2015–2018. "
-                    "Validation: 2021. Holdout: 2022.",
+                    "Validation: 2021. Holdout: 2022. "
+                    "2019–2020 are excluded from the analysis due to data quality concerns during the COVID-19 pandemic.",
                     style=analysis_text_style,
                 ),
             ],
