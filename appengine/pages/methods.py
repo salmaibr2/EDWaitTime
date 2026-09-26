@@ -141,7 +141,7 @@ layout = html.Div(
                     ),
                     html.Li("WAITTIME filtered to 0–480 minutes (physiological feasibility range)"),
                     html.Li("40 exact duplicate rows removed"),
-                    html.Li("SETTYPE excluded — 100% of records are General ED (SETTYPE=3), zero variance"),
+                    html.Li("SETTYPE excluded: 100% of records are General ED (SETTYPE=3), zero variance"),
                 ], style={"fontSize": "0.92rem"}),
             ],
             style=card_style,
@@ -153,7 +153,7 @@ layout = html.Div(
             [
                 html.P(
                     "All regression models trained on this dataset produce negative R² on the "
-                    "holdout year — meaning they perform worse than simply predicting the mean "
+                    "holdout year, meaning they perform worse than simply predicting the mean "
                     "wait time for every patient. This is not a failure of the algorithms. It "
                     "reflects a fundamental limitation of the data.",
                     style=text_style,
@@ -168,7 +168,7 @@ layout = html.Div(
                 html.P(
                     "Patient-level features (age, vitals, triage level, demographics) have "
                     "near-zero Spearman correlation with wait time. Arrival hour is the "
-                    "strongest individual predictor — and a simple hour-of-day median baseline "
+                    "strongest individual predictor, and a simple hour-of-day median baseline "
                     "matches complex gradient boosting on MAE (28.3 min). Adding more features "
                     "provides no additional predictive power.",
                     style=text_style,
@@ -180,7 +180,7 @@ layout = html.Div(
         html.Div(
             [
                 html.P(
-                    "Demographics do not drive wait time — and that is a meaningful finding.",
+                    "Demographics do not drive wait time, and that is a meaningful finding.",
                     style={"fontWeight": "700", "margin": "0 0 0.5rem 0", "fontSize": "1rem"},
                 ),
                 html.P(
@@ -193,8 +193,8 @@ layout = html.Div(
                 html.P(
                     "This is an important equity signal: NHAMCS-sampled facilities are not "
                     "systematically delaying care based on who the patient is. Delays are "
-                    "system-driven — determined by boarding rates, bed availability, staffing "
-                    "levels, and time of day — not by patient demographics. This finding "
+                    "system-driven: determined by boarding rates, bed availability, staffing "
+                    "levels, and time of day, not by patient demographics. This finding "
                     "redirected the entire project from demographic-based prediction toward "
                     "operational bottleneck identification.",
                     style={"margin": "0", "fontSize": "0.93rem"},
@@ -224,12 +224,12 @@ layout = html.Div(
                     style=text_style,
                 ),
                 html.Ul([
-                    html.Li("BOARD — patient held pending inpatient admission (boarding)"),
-                    html.Li("OBSCLIN — patient placed in observation unit"),
-                    html.Li("FASTTRAK — fast-track parallel triage pathway active"),
-                    html.Li("BEDREG, BEDCZAR, IMBED — bed management programs"),
-                    html.Li("ANYIMAGE, MRI, XRAY, CTCONTRAST — imaging workload flags"),
-                    html.Li("ADMIT — patient admitted to inpatient at end of visit"),
+                    html.Li("BOARD: patient held pending inpatient admission (boarding)"),
+                    html.Li("OBSCLIN: patient placed in observation unit"),
+                    html.Li("FASTTRAK: fast-track parallel triage pathway active"),
+                    html.Li("BEDREG, BEDCZAR, IMBED: bed management programs"),
+                    html.Li("ANYIMAGE, MRI, XRAY, CTCONTRAST: imaging workload flags"),
+                    html.Li("ADMIT: patient admitted to inpatient at end of visit"),
                 ], style={"fontSize": "0.92rem", "marginBottom": "0.8rem"}),
                 html.P(
                     "For each flag, the PATWT-weighted mean wait time is computed separately "
@@ -262,14 +262,14 @@ layout = html.Div(
                 ], style={"fontSize": "0.92rem", "marginBottom": "0.8rem"}),
                 html.P(
                     "A temporal split is used rather than random split to simulate real-world "
-                    "deployment — the model is always evaluated on future data it has never seen.",
+                    "deployment: the model is always evaluated on future data it has never seen.",
                     style=text_style,
                 ),
 
                 html.H4("Features (arrival-time only)", style={"marginBottom": "0.3rem", "color": "#1e40af"}),
                 html.P(
                     "Only features available at the moment of patient arrival are used in the "
-                    "classifier — triage level (IMMEDR), vitals (BPSYS, BPDIAS, TEMPF, PULSE, "
+                    "classifier: triage level (IMMEDR), vitals (BPSYS, BPDIAS, TEMPF, PULSE, "
                     "RESPR), demographics (AGE, SEX, RACEUN, ETHUN), arrival hour, day of week, "
                     "month, region, and MSA type. Cyclical encoding (sin/cos) is applied to "
                     "arrival hour and month. IS_PEAK and IS_WEEKEND binary flags are added.",

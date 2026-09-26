@@ -1,7 +1,26 @@
 import dash
-from dash import html
+from dash import html, dcc
+
+from data_loader import get_dataframe
+from figures import (
+    build_wait_time_distribution,
+    build_temporal_patterns,
+    build_triage_level,
+    build_regional_breakdown,
+    build_operational_features,
+)
 
 dash.register_page(__name__)
+
+# loaded once when the app starts, reused for every visitor
+_df = get_dataframe()
+fig_distribution = build_wait_time_distribution(_df)
+fig_temporal = build_temporal_patterns(_df)
+fig_triage = build_triage_level(_df)
+fig_regional = build_regional_breakdown(_df)
+fig_operational = build_operational_features(_df)
+
+graph_config = {"displaylogo": False}
 
 # ── styles ──
 container_style = {
@@ -121,9 +140,9 @@ layout = html.Div(
         # Header
         html.H1("Analytics & Results", style={"marginBottom": "0.3rem"}),
         html.P(
-            "PATWT-weighted EDA, bottleneck analysis, and model performance — "
+            "PATWT-weighted EDA, bottleneck analysis, and model performance on "
             "91,811 ED visits from NHAMCS 2015–2018, 2021–2022 representing ~728M national visits. "
-            "2019–2020 are excluded from the analysis due to data quality concerns during the COVID-19 pandemic.",
+            "2019–2020 are excluded because NHAMCS SAS files for those years are not publicly available from the CDC.",
             style={"color": "#4b5563", "marginTop": 0, "marginBottom": "0.5rem"},
         ),
         html.Hr(),
@@ -144,10 +163,7 @@ layout = html.Div(
         # SECTION 1: Wait Time Distribution
         html.H2("1. Wait Time Distribution (Weighted)", style=section_heading_style),
 
-        html.Img(
-            src="/assets/waittime_distribution_weighted.png",
-            style={"width": "100%", "maxWidth": "800px", "display": "block", "margin": "0 auto"},
-        ),
+        dcc.Graph(figure=fig_distribution, config=graph_config),
         html.P(
             "Figure 1: PATWT-weighted distribution of ED wait times. Each bin is scaled "
             "by the survey weights so counts reflect national visit volumes.",
@@ -177,10 +193,7 @@ layout = html.Div(
         # SECTION 2: Temporal Patterns
         html.H2("2. Temporal Patterns", style=section_heading_style),
 
-        html.Img(
-            src="/assets/waittime_temporal_weighted.png",
-            style={"width": "100%", "maxWidth": "900px", "display": "block", "margin": "0 auto"},
-        ),
+        dcc.Graph(figure=fig_temporal, config=graph_config),
         html.P(
             "Figure 2: PATWT-weighted mean wait time by arrival hour (left) and day of week (right).",
             style=fig_caption_style,
@@ -219,10 +232,7 @@ layout = html.Div(
         # SECTION 3: Triage Breakdown
         html.H2("3. Wait Time by Triage Level (Weighted)", style=section_heading_style),
 
-        html.Img(
-            src="/assets/waittime_by_triage_weighted.png",
-            style={"width": "100%", "maxWidth": "750px", "display": "block", "margin": "0 auto"},
-        ),
+        dcc.Graph(figure=fig_triage, config=graph_config),
         html.P(
             "Figure 3: PATWT-weighted mean wait time and visit share by IMMEDR triage category. "
             "Includes all coded values: 1–5 (standard triage levels), 0 (not recorded), and 7 (no triage performed).",
@@ -245,8 +255,8 @@ layout = html.Div(
                     style=analysis_text_style,
                 ),
                 html.P(
-                    "Two additional categories appear in the data: No triage (code 7) — patients "
-                    "who bypassed the triage queue entirely, typically via immediate bedding — and "
+                    "Two additional categories appear in the data: No triage (code 7), patients "
+                    "who bypassed the triage queue entirely, typically via immediate bedding, and "
                     "Not recorded (code 0), visits where no triage assignment was captured. "
                     "Both represent a small share of national visits.",
                     style={**analysis_text_style, "color": "#6b7280", "fontStyle": "italic"},
@@ -292,19 +302,19 @@ layout = html.Div(
             [
                 html.Div([
                     html.P("Boarding (BOARD)", style={"fontWeight": "700", "margin": "0 0 0.2rem 0", "color": "#dc2626"}),
-                    html.P("+7.7 min weighted delta — largest binary bottleneck. Inpatient-admitted patients "
+                    html.P("+7.7 min weighted delta, largest binary bottleneck. Inpatient-admitted patients "
                            "held in ED beds block capacity for incoming patients, creating a cascade effect "
                            "on all subsequent wait times.", style={"margin": 0, "fontSize": "0.92rem"}),
                 ], style={**card_style, "borderLeft": "4px solid #dc2626"}),
                 html.Div([
                     html.P("Bed Czar (BEDCZAR)", style={"fontWeight": "700", "margin": "0 0 0.2rem 0", "color": "#ea580c"}),
-                    html.P("+6.8 min — bed management coordinators appear at the most congested facilities. "
+                    html.P("+6.8 min: bed management coordinators appear at the most congested facilities. "
                            "The association reflects where the program is deployed, not a causal effect of "
                            "the program itself.", style={"margin": 0, "fontSize": "0.92rem"}),
                 ], style={**card_style, "borderLeft": "4px solid #ea580c"}),
                 html.Div([
                     html.P("Observation Unit (OBSCLIN)", style={"fontWeight": "700", "margin": "0 0 0.2rem 0", "color": "#d97706"}),
-                    html.P("+5.0 min — patients placed in observation status consume ED capacity that affects "
+                    html.P("+5.0 min: patients placed in observation status consume ED capacity that affects "
                            "throughput for all subsequent arrivals.", style={"margin": 0, "fontSize": "0.92rem"}),
                 ], style={**card_style, "borderLeft": "4px solid #d97706"}),
             ],
@@ -326,8 +336,9 @@ layout = html.Div(
                     "SHAP values from a PATWT-weighted gradient boosting model confirm the "
                     "bottleneck ranking from the raw deltas, while also accounting for feature "
                     "interactions. Fast-track (FASTTRAK) is the highest-impact feature by SHAP "
-                    "(mean |SHAP| 1.03), reflecting that its presence strongly predicts reduced "
-                    "wait times — evidence that parallel triage pathways are highly effective.",
+                    "(mean |SHAP| 1.03), meaning it drives more of the model's predictions than any "
+                    "other operational flag, though its raw weighted delta of +1.6 min shows a "
+                    "small increase in wait time, not a decrease.",
                     style=analysis_text_style,
                 ),
                 html.P(
@@ -339,7 +350,7 @@ layout = html.Div(
                 ),
                 html.P(
                     "Note on TOTPROC: the total procedures count has the highest raw SHAP value "
-                    "among operational features (1.42 min) — higher than any binary bottleneck flag. "
+                    "among operational features (1.42 min), higher than any binary bottleneck flag. "
                     "However, it is excluded from the bottleneck ranking because it is a proxy for "
                     "visit complexity, not an actionable operational lever. More procedures reflect "
                     "sicker patients requiring more care; a hospital cannot reduce procedures to shorten "
@@ -354,10 +365,12 @@ layout = html.Div(
         html.Div(
             [
                 html.P(
-                    "Fast-track programs have the largest SHAP impact and the only negative delta — "
-                    "hospitals with fast-track report shorter waits. Boarding has the largest "
-                    "positive delta (+7.7 min). These two interventions should be the primary "
-                    "targets for operational improvement.",
+                    "Fast-track programs have the largest SHAP impact of any operational feature, "
+                    "meaning they are the single most influential input to the model's predictions. "
+                    "Their raw weighted delta is a modest +1.6 min, however, not a reduction, so this "
+                    "likely reflects which facilities adopt fast-track programs rather than a "
+                    "protective effect of the program itself. Boarding has the largest positive "
+                    "delta (+7.7 min) and remains the clearest target for operational improvement.",
                     style={"fontWeight": "600", "margin": "0"},
                 ),
             ],
@@ -367,12 +380,9 @@ layout = html.Div(
         # SECTION 5: Operational Features Overview
         html.H2("5. Operational Feature Prevalence & Impact", style=section_heading_style),
 
-        html.Img(
-            src="/assets/operational_features_weighted.png",
-            style={"width": "100%", "maxWidth": "900px", "display": "block", "margin": "0 auto"},
-        ),
+        dcc.Graph(figure=fig_operational, config=graph_config),
         html.P(
-            "Figure 6: For each operational flag — PATWT-weighted prevalence (% of visits where "
+            "Figure 6: For each operational flag, PATWT-weighted prevalence (% of visits where "
             "flag = present) and the weighted mean wait split (present vs. absent).",
             style=fig_caption_style,
         ),
@@ -394,10 +404,7 @@ layout = html.Div(
         # SECTION 6: Regional Breakdown
         html.H2("6. Regional Breakdown", style=section_heading_style),
 
-        html.Img(
-            src="/assets/waittime_by_region_weighted.png",
-            style={"width": "100%", "maxWidth": "800px", "display": "block", "margin": "0 auto"},
-        ),
+        dcc.Graph(figure=fig_regional, config=graph_config),
         html.P(
             "Figure 7: PATWT-weighted mean wait time by US census region.",
             style=fig_caption_style,
@@ -442,7 +449,7 @@ layout = html.Div(
                     "features (triage level, vitals, arrival hour, demographics, region) to predict "
                     "whether a patient will wait more than 30 minutes. Train: 2015–2018. "
                     "Validation: 2021. Holdout: 2022. "
-                    "2019–2020 are excluded from the analysis due to data quality concerns during the COVID-19 pandemic.",
+                    "2019–2020 are excluded because NHAMCS SAS files for those years are not publicly available from the CDC.",
                     style=analysis_text_style,
                 ),
             ],
@@ -587,9 +594,11 @@ layout = html.Div(
                 html.H4("Highest-impact interventions", style={"marginBottom": "0.3rem", "color": "#1e40af"}),
                 html.Ul([
                     html.Li(
-                        "Expand fast-track capacity: fast-track is the strongest protective factor "
-                        "(SHAP 1.03). Parallel pathways for lower-acuity patients directly reduce "
-                        "congestion for higher-acuity queues."
+                        "Investigate fast-track further before scaling it: it is the model's "
+                        "single most influential feature (SHAP 1.03), but its raw association with "
+                        "wait time is a small +1.6 min increase, not a decrease. This suggests "
+                        "fast-track is deployed at busier facilities rather than causing shorter "
+                        "waits, and warrants a facility-level study before drawing operational conclusions."
                     ),
                     html.Li(
                         "Reduce inpatient boarding: boarding adds +7.7 min per affected visit. "

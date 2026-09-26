@@ -54,7 +54,7 @@ layout = html.Div(
     [
         html.H1("ED Bottleneck Analysis Project", style={"marginBottom": "0.4rem"}),
         html.P(
-            "Identifying operational bottlenecks that drive emergency department wait times — "
+            "Identifying operational bottlenecks that drive emergency department wait times, "
             "so hospitals can better target staffing and resource allocation.",
             style={"color": "#4b5563", "marginTop": 0},
         ),
@@ -81,14 +81,14 @@ layout = html.Div(
                 html.H3("What this project does"),
                 html.P(
                     "We use CDC NHAMCS emergency department survey data (2015–2022) to identify "
-                    "which operational conditions — boarding, observation units, imaging workload, "
-                    "bed management — are most associated with elevated patient wait times. "
+                    "which operational conditions (boarding, observation units, imaging workload, "
+                    "bed management) are most associated with elevated patient wait times. "
                     "The 91,811 cleaned visit records carry PATWT survey weights, so all estimates "
                     "represent the full national ED population (~728 million weighted visits)."
                 ),
                 html.P(
-                    "The primary goal is not to predict any individual patient's wait time — "
-                    "that is not achievable from retrospective survey data without real-time "
+                    "The primary goal is not to predict any individual patient's wait time. "
+                    "That is not achievable from retrospective survey data without real-time "
                     "operational context. Instead, the goal is to rank bottlenecks by their "
                     "population-level impact, enabling hospital administrators to prioritize "
                     "interventions with the highest expected payoff."
@@ -121,7 +121,7 @@ layout = html.Div(
                             "held pending inpatient admission wait +7.7 minutes longer on average than non-boarded visits."
                         ),
                         html.Li(
-                            "Bed czar programs are associated with +6.8 min longer waits — counter-intuitive "
+                            "Bed czar programs are associated with +6.8 min longer waits, counter-intuitive "
                             "because these programs appear at the most congested facilities, not because "
                             "the programs cause delays."
                         ),
@@ -130,12 +130,14 @@ layout = html.Div(
                             "ED capacity that affects throughput for all subsequent arrivals."
                         ),
                         html.Li(
-                            "Fast-track is the top SHAP feature (|SHAP| 1.03): its presence strongly "
-                            "predicts reduced wait times, confirming that parallel triage pathways work."
+                            "Fast-track is the top SHAP feature (|SHAP| 1.03), the single most "
+                            "influential input to the model, though its raw weighted delta is a "
+                            "small +1.6 min increase, likely reflecting where fast-track programs "
+                            "get deployed rather than a protective effect."
                         ),
                         html.Li(
                             "A PATWT-weighted gradient boosting classifier predicts wait >30 min with "
-                            "AUC-ROC 0.581 and average precision 0.376 — useful for triage support but "
+                            "AUC-ROC 0.581 and average precision 0.376, useful for triage support but "
                             "not a substitute for real-time operational monitoring."
                         ),
                     ]
@@ -147,13 +149,12 @@ layout = html.Div(
             [
                 html.H3("Why it matters"),
                 html.P(
-                    "Every year roughly 3 million patients leave the ED without being seen due to "
-                    "long waits, increasing the risk of serious complications. Reducing avoidable "
-                    "wait times can improve patient outcomes, reduce left-without-being-seen rates, "
-                    "lower staff burnout (affecting over 50% of ED clinicians), and decrease the "
-                    "hundreds of thousands of dollars hospitals spend per turnover. This project "
-                    "turns nationally representative ED data into prioritized, evidence-based "
-                    "operational recommendations."
+                    "Industry estimates suggest millions of ED patients leave without being seen "
+                    "each year due to long waits, increasing the risk of serious complications, and "
+                    "that ED staff burnout is widespread, alongside significant per-hire turnover "
+                    "costs for hospitals. Reducing avoidable wait times can help address these "
+                    "pressures. This project turns nationally representative ED data into "
+                    "prioritized, evidence-based operational recommendations."
                 ),
             ],
             style=card_style,
