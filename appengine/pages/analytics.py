@@ -122,7 +122,8 @@ layout = html.Div(
         html.H1("Analytics & Results", style={"marginBottom": "0.3rem"}),
         html.P(
             "PATWT-weighted EDA, bottleneck analysis, and model performance — "
-            "91,811 ED visits from NHAMCS 2015–2022 representing ~728M national visits.",
+            "91,811 ED visits from NHAMCS 2015–2018, 2021–2022 representing ~728M national visits. "
+            "2019–2020 are excluded from the analysis due to data quality concerns during the COVID-19 pandemic.",
             style={"color": "#4b5563", "marginTop": 0, "marginBottom": "0.5rem"},
         ),
         html.Hr(),
@@ -132,7 +133,7 @@ layout = html.Div(
             [
                 html.Div([html.P("91,811", style=stat_number), html.P("ED Visits", style=stat_label)], style=stat_box_style),
                 html.Div([html.P("~728M", style=stat_number), html.P("Weighted National Visits", style=stat_label)], style=stat_box_style),
-                html.Div([html.P("6 Years", style=stat_number), html.P("2015–2022", style=stat_label)], style=stat_box_style),
+                html.Div([html.P("6 Years", style=stat_number), html.P("2015–18, 2021–22*", style=stat_label)], style=stat_box_style),
                 html.Div([html.P("37", style=stat_number), html.P("Features", style=stat_label)], style=stat_box_style),
                 html.Div([html.P("0–480 min", style=stat_number), html.P("Wait Time Range", style=stat_label)], style=stat_box_style),
                 html.Div([html.P("PATWT", style=stat_number), html.P("Survey Weights Applied", style=stat_label)], style=stat_box_style),
@@ -223,7 +224,8 @@ layout = html.Div(
             style={"width": "100%", "maxWidth": "750px", "display": "block", "margin": "0 auto"},
         ),
         html.P(
-            "Figure 3: PATWT-weighted mean wait time and visit share by IMMEDR triage category.",
+            "Figure 3: PATWT-weighted mean wait time and visit share by IMMEDR triage category. "
+            "Includes all coded values: 1–5 (standard triage levels), 0 (not recorded), and 7 (no triage performed).",
             style=fig_caption_style,
         ),
 
@@ -241,6 +243,13 @@ layout = html.Div(
                     "are routinely queued behind higher-acuity cases, making them the group most "
                     "sensitive to operational bottlenecks like boarding and bed shortages.",
                     style=analysis_text_style,
+                ),
+                html.P(
+                    "Two additional categories appear in the data: No triage (code 7) — patients "
+                    "who bypassed the triage queue entirely, typically via immediate bedding — and "
+                    "Not recorded (code 0), visits where no triage assignment was captured. "
+                    "Both represent a small share of national visits.",
+                    style={**analysis_text_style, "color": "#6b7280", "fontStyle": "italic"},
                 ),
             ],
             style=card_style,
@@ -327,6 +336,16 @@ layout = html.Div(
                     "have lower SHAP values, suggesting their impact on wait time is mediated "
                     "through other operational conditions rather than being a direct cause.",
                     style=analysis_text_style,
+                ),
+                html.P(
+                    "Note on TOTPROC: the total procedures count has the highest raw SHAP value "
+                    "among operational features (1.42 min) — higher than any binary bottleneck flag. "
+                    "However, it is excluded from the bottleneck ranking because it is a proxy for "
+                    "visit complexity, not an actionable operational lever. More procedures reflect "
+                    "sicker patients requiring more care; a hospital cannot reduce procedures to shorten "
+                    "waits. Its high SHAP value confirms that visit complexity is a major driver of "
+                    "wait time variance, but the levers for improvement lie in the process flags above.",
+                    style={**analysis_text_style, "color": "#6b7280", "fontStyle": "italic"},
                 ),
             ],
             style=card_style,
@@ -422,7 +441,8 @@ layout = html.Div(
                     "We trained a PATWT-weighted HistGradientBoosting classifier on arrival-time "
                     "features (triage level, vitals, arrival hour, demographics, region) to predict "
                     "whether a patient will wait more than 30 minutes. Train: 2015–2018. "
-                    "Validation: 2021. Holdout: 2022.",
+                    "Validation: 2021. Holdout: 2022. "
+                    "2019–2020 are excluded from the analysis due to data quality concerns during the COVID-19 pandemic.",
                     style=analysis_text_style,
                 ),
             ],
